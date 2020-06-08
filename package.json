@@ -1,0 +1,31 @@
+{
+  "name": "scrapper-skillcapped",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.0.20",
+    "axios": "^0.19.2",
+    "cheerio": "^1.0.0-rc.3",
+    "chokidar": "^3.4.0",
+    "firefox-profile": "^2.0.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "jsonfile": "^6.0.1",
+    "m3u8-file-parser": "^0.2.3",
+    "m3u8-to-mp4": "^1.0.0",
+    "node-fetch": "^2.6.0",
+    "node-m3u8-to-mp4": "^2.0.0",
+    "path": "^0.12.7",
+    "promisify": "0.0.3",
+    "puppeteer": "^3.0.4",
+    "selenium-webdriver": "^4.0.0-alpha.7"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
