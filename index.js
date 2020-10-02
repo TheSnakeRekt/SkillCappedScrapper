@@ -2,14 +2,15 @@ const util = require('util');
 const {Builder, By} = require("selenium-webdriver");
 const firefox = require("selenium-webdriver/firefox");
 const download_dir = __dirname;
-var fluent_ffmpeg = require("fluent-ffmpeg");
-//const converter = new m3u8ToMp4();
+const converter = require("handbrake-js") ;
 const fetch = require('node-fetch');
 const jsonfile = require('jsonfile');
-const M3U8FileParser = require('m3u8-file-parser');
-const reader = new M3U8FileParser();
-//let videos = require("./data.json");
-let videos = {Mid:[],Top:[],Jungle:[],Support:[],Adc:[]} ;
+
+let videos = {Mid:[],Jungle:[],Adc:[],Support:[],Top:[]} ;
+
+var ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath("C:\\Users\\SolidusDex\\Documents\\ffmpeg\\bin\\ffmpeg.exe");
+ffmpeg.setFfprobePath("C:\\Users\\SolidusDex\\Documents\\ffmpeg\\bin\\ffprobe.exe")
 
 const streamPipeline = util.promisify(require('stream').pipeline)
 
@@ -37,19 +38,18 @@ options.setPreference("services.sync.prefs.sync.browser.download.manager.showWhe
 
 
 const fs = require("fs");
+const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
 
-const homeDir = "F:\\";
+const homeDir = "D:\\scrapped";
 
 
 
 let titles = [];
 let courses = [];
 let subtitles = [];
-
-//let videos={};
+let totalVideos = 0;
 
 const url = "https://www.skill-capped.com/lol/browse";
-//const addon = "https://addons.mozilla.org/pt-PT/firefox/addon/video-downloadhelper/";
 
 async function a() {
     
@@ -62,102 +62,109 @@ async function a() {
 
     await  driver.manage().window().maximize();
 
+    const topics = Object.keys(videos) ;  
+        for(let t = 0; t < titles.length; t++){
+
+           
+            await titles[t].elem.click();
+            await driver.sleep(800);
+            await getCourses(driver);
+            
+            for(let j = 0; j < courses.length; j++){
        
-        //videos[titles[i].title] = [];
-
-      
-        await titles[4].elem.click();
-        
-        await driver.sleep(500);
-    
-        await getCourses(driver);
-        for(let j = 0; j < courses.length; j++){
-       
-            if(j == 0){
-                continue;
-            }
-              
-           await driver.executeScript("arguments[0].scrollIntoView();",courses[j]);
-            
-            
-            
-            await driver.sleep(1500);
-            
-            let section = await driver.executeScript(`return arguments[0].querySelectorAll("[class='title-text css-1ai61ue'] div")[0].childNodes[0].textContent`,courses[j]);
-            let ind = videos.Top.push({Course:section.replace("?"," "),Vids:[]})
-            
-            
-
-
-            if(!subtitles.includes(section)){
-                subtitles.push(section)
-                
-                const vids =  await driver.executeScript("return arguments[0].getElementsByClassName('elem-course-row-video');",courses[j]);
-                const links = [];
-
-                for(let v = 0; v<vids.length;v++){
-                    await links.push((await vids[v].getAttribute("href")).replace("https://www.skill-capped.com/lol/course/",""))
+                if(j == 0){
+                    continue;
                 }
-
-                for(let l =0; l< links.length; l++){
-                    const id = links[l].split("/")[3];
-                    const titleVid = links[l].split("/")[2].replace("-", " ");
-                    console.log(titleVid)
-                    videos.Top[ind - 1]["Vids"].push({title:titleVid,id:id});
-                }
-                        
-            }
+                 try {
+                    await driver.executeScript("arguments[0].scrollIntoView();",courses[j]);
+                 } catch (error) {
+                     
+                 } 
                
-            
+                
+                
+                
+                await driver.sleep(1500);
+                
+                let section = await driver.executeScript(`return arguments[0].querySelectorAll("[class='title-text css-1ai61ue'] div")[0].childNodes[0].textContent`,courses[j]);
+                let ind = videos[topics[t]].push({Course:section.replace("?"," "),Vids:[]})
+                
+                
+    
+    
+                if(!subtitles.includes(section)){
+                    subtitles.push(section)
+                    
+                    const vids =  await driver.executeScript("return arguments[0].getElementsByClassName('elem-course-row-video');",courses[j]);
+                    const links = [];
+    
+                    for(let v = 0; v<vids.length;v++){
+                        await links.push((await vids[v].getAttribute("href")).replace("https://www.skill-capped.com/lol/course/",""))
+                    }
+    
+                    for(let l =0; l< links.length; l++){
+                        const id = links[l].split("/")[3];
+                        const titleVid = links[l].split("/")[2].replace("-", " ");
+                        console.log(titleVid)
+                        videos[topics[t]][ind - 1]["Vids"].push({title:titleVid,id:id});
+                    }
+                            
+                }
+            }
+
+            await driver.sleep(800);
+            await driver.executeScript("window.scrollTo(0, 0);");
+            await driver.sleep(800);
         }
 
-        
-        //await driver.sleep(2000);
-        
-      //  await driver.executeScript("window.scrollTo(0, 0);");
-        
-        //await driver.executeScript("arguments[0].scrollIntoView(true)",titles[i].elem);
-    
     driver.close();
-    Object.keys(videos).forEach(key=>{
-        fs.mkdirSync(homeDir+"\\"+key);
-        videos[key].forEach((course,i)=>{
-            let p = course.Course.replace(":"," - ");
-            fs.mkdirSync(homeDir+"\\"+key+"\\"+i+"-"+p.replace("/"," "));
-            course.Vids.forEach(async (vid,j)=>{
-                let ti =vid.title.replace(":","");
-                await link_gen(vid.id,ti.replace("/"," "),j,homeDir+"\\"+key+"\\"+i+"-"+p.replace("/"," "));
-            })
-        })
-    })
-
-    jsonfile.writeFileSync(homeDir+"\\videos.json", videos)
-}
-   
-   
-
-function sleep(milliseconds) {
-    const date = Date.now();
-    let currentDate = null;
-    do {
-      currentDate = Date.now();
-    } while (currentDate - date < milliseconds);
-}
-  
-async function login (driver){
-    return new Promise(async res=>{
-        await driver.navigate().to(url);
-        await driver.findElement(By.className("css-7co8v6")).click();
-        const inputs =  await driver.findElements(By.className("MuiInputBase-input MuiInput-input"));
-
     
-        await inputs[0].click();
-        await inputs[0].sendKeys(cred.user);
-        await inputs[1].click()
-        await inputs[1].sendKeys(cred.pass);
-        await driver.findElement(By.className("MuiButton-label")).click();
-        res();
-    })
+    var keys = Object.keys(videos);
+    jsonfile.writeFileSync(homeDir+"\\videos.json", videos);
+    
+    for(let o = 0; o < keys.length; o++){
+        try {
+            fs.mkdirSync(homeDir+"\\"+keys[o]); 
+        } catch (error) {
+            
+        }
+       
+        var course =  videos[keys[o]];
+
+        for(let u = 0; u < course.length;u++){
+            let p = course[u].Course.replace(":"," - ");
+            
+            try {
+                fs.mkdirSync(homeDir+"\\"+keys[o]+"\\"+u+"-"+p.replace("/"," ").replace(/\s/g, '-'));
+            } catch (error) {
+                
+            }
+         
+            var tm = course[u].Vids;
+            
+        
+
+            for(let t = 0 ;t < tm.length; t++){
+                let ti = tm[t].title.replace(":","");
+                await link_gen(tm[t].id,ti.replace("/"," "),t,homeDir+"/"+keys[o]+"/"+u+"-"+p.replace("/"," ").replace(/\s/g, '-'));
+                var inputOut = "D:/scrapped"+"/"+keys[o]+"/"+u+"-"+p.replace("/"," ").replace(/\s/g, '-')+"/"+t+"-"+ti.replace("/"," ").replace(/\s/g, '-')+".ts"
+                var out = "D:/scrapped"+"/"+keys[o]+"/"+u+"-"+p.replace("/"," ").replace(/\s/g, '-')+"/"+t+"-"+ti.replace("/"," ").replace(/\s/g, '-')+".mp4"
+                
+                let options2 =   {
+                    input: inputOut,
+                    output:out,
+                    encoder: 'x265',
+                    rotate: 0
+                }
+
+                console.log("A Converter... "+inputOut+"\n\n");
+
+                //await converter.run(options2).catch(console.error)
+                
+            }
+           
+        }
+    }
 }
 
 function getTitles(driver){
@@ -184,14 +191,7 @@ function getTitles(driver){
   
 }
 
-function createFolder(title,subtitle = "", i=""){
-    subtitle = subtitle.replace("?"," ");
 
-    if(!fs.existsSync(homeDir+`\\${title}\\${i}  ${subtitle}`.replace("/","-").trim())){
-        fs.mkdirSync(homeDir+`\\${title}\\${i}  ${subtitle}`.replace("/","-").trim());
-        return homeDir+`\\${title}\\${i}  ${subtitle}`.replace("/","-").trim();
-    }
-}
 
 async function getCourses(driver){
     courses = [];
@@ -209,30 +209,45 @@ async function getCourses(driver){
 function link_gen(id,filename,i,path){
    
     return new Promise(async res=>{
-        const link = mainCDN+id+file;
-         await download(link,filename,i,path,id);
+         const link = mainCDN+id+file;
+         await download(link,filename.replace(/\s/g, '-'),i,path,id);
          res()
     })
     
 }
 
-function download (link,filename,i,path,id) {
+async function download (link,filename,i,path,id) {
    return new Promise(async res=>{
     const response = await fetch(link);
-    console.log(link,i+"-"+filename+'.m3u8');
 
     if (!response.ok) throw new Error(`unexpected response ${response.statusText}`)
-    await streamPipeline(response.body, fs.createWriteStream(path+"\\"+i+"-"+filename+'.m3u8'))
-    if (!fs.existsSync(path+"\\"+i+"-"+filename)) {
-     fs.mkdirSync(path+"\\"+i+"-"+filename);
+    await streamPipeline(response.body, fs.createWriteStream(path+"\\"+i+"-"+filename.replace(/\s/g, '-')+'.m3u8'))
+    if (!fs.existsSync(path+"\\"+i+"-"+filename.replace(/\s/g, '-'))) {
+     fs.mkdirSync(path+"\\"+i+"-"+filename.replace(/\s/g, '-'));
     }
 
-    await recreate(path+"\\"+i+"-"+filename+'.m3u8',id,path+"\\"+i+"-"+filename);
-    res()
+    var linkList = await recreate(path+"\\"+i+"-"+filename.replace(/\s/g, '-')+'.m3u8',id,path+"\\"+i+"-"+filename.replace(/\s/g, '-'));
 
-   }) 
+    console.log(linkList);
+   
+
+    for (let s = 0; s < linkList.length; s++){
+        
+        await merger(linkList[s],path+"/"+i+"-"+filename.replace(/\s/g, '-'));
+
+        let buffer = fs.readFileSync(path.replace(`\\`,`/`)+'/'+i+'-'+filename.replace(/\s/g, '-')+'/'+linkList[s].substr(linkList[s].length - 19, linkList[s].length))
+        fs.appendFileSync(path.replace("\\","/")+"/"+i+"-"+filename.replace(/\s/g, '-')+".ts", buffer);
+        
+        
+        fs.unlinkSync(path.replace(`\\`,`/`)+'/'+i+'-'+filename.replace(/\s/g, '-')+'/'+linkList[s].substr(linkList[s].length - 19, linkList[s].length));
+    }
+
     
-    //merger(path+"\\"+i+"-"+filename)
+
+
+    res()
+   })
+
 }
 
 function pad_with_zeroes(number, length, st) {
@@ -247,14 +262,13 @@ function pad_with_zeroes(number, length, st) {
 }
 
 function recreate(path,id,folder){
-    console.log("Recreating file "+path);
+    
  
     return new Promise( async res =>{
         const text = fs.readFileSync(path);
         
         const fileTmp =  Buffer.from(text).toString("utf8");
-            
-        console.log("A escrever linhas")
+       
         let  def_file = fileTmp.replace(/(HIDDEN4500)+/gm,"https://d13z5uuzt1wkbz.cloudfront.net/"+id+"/HIDDEN4500").split("\n");
         let links = [];
     
@@ -268,22 +282,17 @@ function recreate(path,id,folder){
         fs.writeFileSync(path,def_file);
      
        
-        console.log(path);
-        
-        /*for(let s = 0; s < links.length; s++){
-            
-             await merger(links[s],folder);
-          
-        }*/
+        console.log("Written to: "+path);
+        totalVideos++;
 
-        res();
+        res(links);
     })
  
         
 }
 
 function merger(file, path){
- 
+    
     if(!fs.existsSync(path+"\\"+file.substr(file.length - 19, file.length))){
         console.log("Downloading: "+file);
        
@@ -296,8 +305,10 @@ function merger(file, path){
             console.log("Path",path+"\\"+file.substr(file.length - 19, file.length));
                     
             if (!response.ok) throw new Error(`unexpected response ${response.statusText}`)
+           
             await streamPipeline(response.body, fs.createWriteStream(path+"\\"+file.substr(file.length - 19, file.length)))
             
+           
             res();
         
            })
@@ -313,28 +324,4 @@ function merger(file, path){
    
 }
 
-a()
-
-/*Object.keys(videos).forEach(async key=>{/
-    if (!fs.existsSync(homeDir+"\\"+key)){
-        fs.mkdirSync(homeDir+"\\"+key);
-    }
- (async ()=>{
-     let key =  "Top";
-    for(let k = 0; k < videos.Top.length; k++){
-        let p = videos.Top[k].Course.replace(":"," - ");
-        if (!fs.existsSync(homeDir+"\\"+key+"\\"+k+"-"+p.replace("/"," "))){
-            fs.mkdirSync(homeDir+"\\"+key+"\\"+k+"-"+p.replace("/"," "));
-        }
-
-        for(let s = 0; s < videos.Top[k].Vids.length; s++){
-            let ti =videos.Top[k].Vids[s].title.replace(":","");
-            await link_gen(videos.Top[k].Vids[s].id,ti.replace("/"," "),s,homeDir+"\\"+key+"\\"+k+"-"+p.replace("/"," "));
-        }
-
-    }
- })()      
-    
-})*/
-
-
+a();

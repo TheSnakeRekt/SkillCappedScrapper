@@ -10,11 +10,15 @@
   "license": "ISC",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.0.20",
+    "@types/fluent-ffmpeg": "^2.1.14",
     "axios": "^0.19.2",
     "cheerio": "^1.0.0-rc.3",
     "chokidar": "^3.4.0",
+    "ffmpeg": "0.0.4",
+    "ffprobe": "^1.1.0",
     "firefox-profile": "^2.0.0",
     "fluent-ffmpeg": "^2.1.2",
+    "handbrake-js": "^5.0.0",
     "jsonfile": "^6.0.1",
     "m3u8-file-parser": "^0.2.3",
     "m3u8-to-mp4": "^1.0.0",
@@ -23,9 +27,13 @@
     "path": "^0.12.7",
     "promisify": "0.0.3",
     "puppeteer": "^3.0.4",
-    "selenium-webdriver": "^4.0.0-alpha.7"
+    "selenium": "^2.20.0",
+    "selenium-webdriver": "^4.0.0-alpha.7",
+    "ts-to-mp4": "^1.0.4",
+    "ts2mkv": "^1.1.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.4"
+    "nodemon": "^2.0.4",
+    "ts-node": "^8.10.2"
   }
 }
