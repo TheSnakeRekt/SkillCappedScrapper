@@ -8,9 +8,15 @@ const jsonfile = require('jsonfile');
 
 let videos = {Mid:[],Jungle:[],Adc:[],Support:[],Top:[]} ;
 
+//Download ffmpeg plugin and set the path here
+
+const ffmpegPath = "";
+const ffmpegProbePath = "";
+
+// 
 var ffmpeg = require('fluent-ffmpeg');
-ffmpeg.setFfmpegPath("C:\\Users\\SolidusDex\\Documents\\ffmpeg\\bin\\ffmpeg.exe");
-ffmpeg.setFfprobePath("C:\\Users\\SolidusDex\\Documents\\ffmpeg\\bin\\ffprobe.exe")
+ffmpeg.setFfmpegPath(ffmpegPath); 
+ffmpeg.setFfprobePath(ffmpegProbePath);
 
 const streamPipeline = util.promisify(require('stream').pipeline)
 
